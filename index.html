@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>An Interactive Birthday Surprise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #000000; --text-main: #FFFFFF; --accent-pink: #ff85c0; --accent-red: #ff4d4d;
+            --accent-light-pink: #ffd1e8; --accent-light-red: #ff9999;
+            --paper-bg: #FFFFFF; --paper-text: #000000; 
+            --font-main: 'Helvetica Neue', sans-serif; --font-handwriting: 'Caveat', cursive;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-main); overflow: hidden; }
+        .step { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 1rem; position: relative; }
+        .hidden { display: none !important; }
+        .centered-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem;  font-size: clamp(2rem, 8vw, 5rem); font-weight: bold; color: var(--accent-pink); text-shadow: 0 0 10px var(--accent-pink), 0 0 20px var(--accent-pink); white-space: pre-wrap; z-index: 10; }
+        .blinking-cursor::after { content: '|'; animation: blink 1s step-end infinite; }
+        @keyframes blink { from, to { color: transparent; } 50% { color: var(--accent-pink); } }
+        #animation-container { background-color: var(--bg-main); }
+        #countdown { font-size: clamp(4rem, 12vw, 10rem); color: var(--accent-pink); text-shadow: 0 0 20px var(--accent-pink); }
+        .particle-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+        .flower-fall, .confetti, .page-particle, .star { position: absolute; top: -10%; opacity: 0; animation: fall linear infinite; }
+        @keyframes fall { 0% { transform: translateY(0) rotateZ(0deg); opacity: 1; } 100% { transform: translateY(110%) rotateZ(360deg); opacity: 0; } }
+        .blast-particle { position: absolute; left: 50%; top: 50%; opacity: 0; animation: blast 1.2s ease-out forwards; }
+        @keyframes blast { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(var(--x-end), var(--y-end)) scale(0); opacity: 0; } }
+    
+        #gift-step { background: radial-gradient(circle, #2a002a, #000000 70%); transition: opacity 0.5s ease-out; }
+        #gift-content { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 70%;}
+        .gift-visual { font-size: clamp(100px, 30vw, 200px); line-height: 1; margin: 1rem 0; user-select: none; }
+        .gift-title { font-family: var(--font-handwriting); font-size: clamp(1.5rem, 5vw, 2.5rem); margin-bottom: 1rem; color: var(--accent-light-pink); }
+        .gift-navigation { position: absolute; bottom: 5vh; width: 100%; display: flex; justify-content: center; align-items: center; }
+        .gift-nav-button { background: var(--accent-pink); color: white; border: none; padding: 12px 30px; border-radius: 30px; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s, background-color 0.2s; }
+        .gift-nav-button:hover { transform: scale(1.1); background-color: #ff6ab8; }
+        .progress-indicator { position: absolute; top: 5vh; color: #888; }
+ 
+        .pulse { animation: pulse-anim 2s infinite; }
+        @keyframes pulse-anim { 50% { transform: scale(1.1); filter: drop-shadow(0 0 15px var(--accent-pink)); } }
+        .spin { animation: spin-anim 1s ease-out; }
+        @keyframes spin-anim { to { transform: rotate(360deg); } }
+        .glow { animation: glow-anim 1.5s ease-in-out infinite alternate; }
+        @keyframes glow-anim { to { filter: drop-shadow(0 0 20px currentColor); } }
+        .float { animation: float-anim 4s ease-in-out infinite; }
+        @keyframes float-anim { 50% { transform: translateY(-15px); } }
+        .bounce { animation: bounce-anim 1s ease-in-out infinite; }
+        @keyframes bounce-anim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
+        .shake { animation: shake-anim 0.5s ease-in-out infinite; }
+        @keyframes shake-anim { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .rainbow { animation: rainbow-anim 3s linear infinite; }
+        @keyframes rainbow-anim { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        .heartbeat { animation: heartbeat-anim 1.5s ease-in-out infinite; }
+        @keyframes heartbeat-anim { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.3); } 28% { transform: scale(1); } 42% { transform: scale(1.3); } 70% { transform: scale(1); } }
+        .sparkle { animation: sparkle-anim 2s ease-in-out infinite; }
+        @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); filter: brightness(1.5); } }
+        .swing { animation: swing-anim 2s ease-in-out infinite; transform-origin: top center; }
+        @keyframes swing-anim { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+        .zoom-in-out { animation: zoom-anim 2s ease-in-out infinite; }
+        @keyframes zoom-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
+        .swoosh-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;}
+        .swoosh { position: absolute; background: linear-gradient(90deg, var(--accent-pink), var(--accent-red), #85d7ff); border-radius: 100%; animation: swoosh-anim 1s forwards; }
+        @keyframes swoosh-anim { from { opacity: 0.7; transform: scale(0); } to { opacity: 0; transform: scale(2); } }
+        .firework { position: absolute; border-radius: 50%; background: currentColor; animation: firework-anim 1s ease-out forwards; }
+        @keyframes firework-anim { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+
+        .magic-dust { position: absolute; width: 4px; height: 4px; background: var(--accent-pink); border-radius: 50%; animation: magic-dust-anim 2s ease-out forwards; }
+        @keyframes magic-dust-anim {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dust-x), var(--dust-y)) scale(0); opacity: 0; }
+        }
+
+        .bubble { position: absolute; border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; animation: bubble-rise 3s ease-out forwards; }
+        @keyframes bubble-rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+        }
+
+        .rotating-stars { position: absolute; width: 100%; height: 100%; animation: rotate-stars 20s linear infinite; }
+        @keyframes rotate-stars { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+     
+        @keyframes shooting-star {
+            to {
+                transform: translateX(100vw) translateY(50px); 
+                opacity: 0;
+            }
+        }
+        @keyframes float-up {
+            0% { transform: translateX(-50%) translateY(0); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+        }
+
+        
+        #memory-lane-step {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            overflow-y: auto; 
+            justify-content: flex-start; 
+            padding-top: 5vh;
+            padding-bottom: 5vh; 
+        }
+        .memory-card { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 2rem; margin: 1rem; backdrop-filter: blur(10px); }
+        .memory-emoji { font-size: 4rem; margin-bottom: 1rem; }
+        #wish-fountain-step { background: radial-gradient(circle at center, #0f3460 0%, #16213e 100%); }
+        .fountain-container { position: relative; width: 300px; height: 400px; }
+        .wish-drop { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); color: #64b5f6; font-size: 1.5rem; animation: wish-rise 3s ease-out forwards; }
+        @keyframes wish-rise {
+            0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-400px) scale(0.5); opacity: 0; }
+        }
+        #cat-animation-container { background: var(--bg-main); } .cat-scene { z-index: 2; position: relative; animation: fadeIn 2s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        #letter-reveal-container { background: linear-gradient(135deg, #2c2c2c 0%, #000000 100%); }
+        .letter-present { display: flex; justify-content: center; align-items: center; height: 100%; }
+        .letter-wrapper { perspective: 1000px; }
+        .letter {
+            background: linear-gradient(135deg, var(--paper-bg) 0%, #f5f5f5 100%);
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            text-align: center;
+        }
+        .letter:hover { transform: translateY(-10px) rotateX(5deg); }
+        .letter p { color: var(--paper-text); font-family: var(--font-handwriting); font-size: 2rem; margin: 1rem 0; }
+        .click-to-open { animation: pulse-anim 2s infinite; }
+        #book-container { background: var(--bg-main); }
+        .book { position: relative; background-color: var(--paper-bg); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden; width: 90vw; height: 75vh; max-width: 400px; max-height: 600px; display: flex; }
+        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; transition: transform 0.6s cubic-bezier(0.45, 0, 0.55, 1); transform: translateX(100%); }
+        .page.is-active { transform: translateX(0%); } .page.was-active { transform: translateX(-100%); }
+        .page-content { font-family: var(--font-handwriting); color: var(--paper-text); font-size: clamp(1.2rem, 5vw, 2rem); line-height: 1.5; position: relative; z-index: 2; }
+        .page-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .book-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: rgba(0,0,0,0.3); color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 10; display: flex; justify-content: center; align-items: center; }
+        #prev-page { left: 10px; } #next-page { right: 10px; }
+        #restart-button { background-color: var(--accent-pink); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 1.2rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="animation-container" class="step"><div id="flower-fall-container" class="particle-container"></div><div id="countdown" class="centered-text"></div><div id="birthday-message" class="centered-text"></div></div>
+    <div id="gift-step" class="step hidden"><div id="gift-content"></div><div class="gift-navigation"><button id="next-gift-button" class="gift-nav-button">Next Gift</button></div><p class="progress-indicator"></p></div>
+    <div id="memory-lane-step" class="step hidden">
+        <h2 style="color: var(--accent-light-pink); font-family: var(--font-handwriting); font-size: 3rem; margin-bottom: 2rem;">Memory Lane</h2>
+        <div id="memory-cards-container" style="display: flex; flex-wrap: wrap; justify-content: center;"></div>
+        <button id="continue-from-memories" class="gift-nav-button" style="margin-top: 2rem;">Continue Journey</button>
+    </div>
+    <div id="wish-fountain-step" class="step hidden">
+        <h2 style="color: var(--accent-light-pink); font-family: var(--font-handwriting); font-size: 3rem; margin-bottom: 2rem;">Make a Wish</h2>
+        <div class="fountain-container" id="fountain"></div>
+        <button id="make-wish-button" class="gift-nav-button" style="margin-top: 2rem;">Drop a Wish</button>
+        <button id="continue-from-fountain" class="gift-nav-button hidden" style="margin-top: 1rem;">Continue</button>
+    </div>
+    <div id="cat-animation-container" class="step hidden"><div id="confetti-container" class="particle-container"></div><div class="cat-scene"><img src="https://flowera.in/uploads/products/White-roses-bouquet-2-2_166978810.jpg" alt="Cute Cats with Birthday Cake" class="cat-image"></div></div>
+    <div id="letter-reveal-container" class="step hidden"><div class="letter-present"><div class="letter-wrapper"><div class="letter"><p>And one last thing...</p><p class="click-to-open">💌 Tap to Open</p></div></div></div></div>
+    <div id="book-container" class="step hidden">
+        <div class="book">
+            <div id="page-1" class="page"><div class="page-background"></div><div class="page-content"><h1>My Dearest Samucha, Happy Happy Happy Happy Birthday!</h1></div></div>
+            <div id="page-2" class="page"><div class="page-background"></div><div class="page-content"><p>Shono 😒😒, Jhogra jhati , marpit, bhul bujha bujhi, oviman , kharap shomoy ja e ashuk ja e hok , joto boro ba joto choto e hok kokhono kothaw jawa jabena, mon kharap korey thaka jabena, jeed kora jabena akdomi.. Shobshomoy chai amra aksathey thaki. joto jhor badha bipotti e ashuk na kno! </p></div></div>
+            <div id="page-3" class="page"><div class="page-background"></div><div class="page-content"><p> Ar shononen, Always stay happii happii, safe and socheton. Ar amar belay matha cool cool ar positive. Ar ami kokhono low low hoye gele amake niye e happi hapii, ar kokhono ami jaite chaileo apnio jaben na amakeo jaitee diben na bujhey niben low low or kichu hoyechey , ar ja e hok jawa jabena na apnar na amar kokhono e. Ar apnar o low low hoye ba overthink korey jawa jabena, ar shob shomoy shob bolbben. Ar aktuo kokhono amake distant kortey ashben naa.</p></div></div>
+            <div id="page-4" class="page"><div class="page-background"></div><div class="page-content"><h1> Happyyyyy Birthday! ❤️❤️❤️❤️ </h1><button id="restart-button">Roll Back</button></div></div>
+        </div>
+        <button id="prev-page" class="book-nav" style="display: none;"><</button>
+        <button id="next-page" class="book-nav">></button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const steps = document.querySelectorAll('.step');
+            const animationContainer = document.getElementById('animation-container');
+            const flowerFallContainer = document.getElementById('flower-fall-container');
+            const giftStep = document.getElementById('gift-step');
+            const giftContent = document.getElementById('gift-content');
+            const nextGiftButton = document.getElementById('next-gift-button');
+            const progressIndicator = document.querySelector('.progress-indicator');
+            const memoryLaneStep = document.getElementById('memory-lane-step');
+            const wishFountainStep = document.getElementById('wish-fountain-step');
+            const catContainer = document.getElementById('cat-animation-container');
+            const confettiContainer = document.getElementById('confetti-container');
+            const letterRevealContainer = document.getElementById('letter-reveal-container');
+            const bookContainer = document.getElementById('book-container');
+            const letter = document.querySelector('.letter');
+            const bookPages = document.querySelectorAll('.page');
+            const prevButton = document.getElementById('prev-page');
+            const nextButton = document.getElementById('next-page');
+            const restartButton = document.getElementById('restart-button');
+            let currentPageIndex = 0;
+            let currentGiftIndex = 0;
+            const gifts = [
+                { title: "A Star to Guide this pagal aurat", visual: "★", style: "color: var(--accent-pink);", animation: "pulse" },
+                { title: "A Melody for Your Heart", visual: "🎵", style: "color: var(--text-main);", interaction: 'playMusicBox' },
+                { title: "A Jar of Endless Wishes", visual: "🏺", style: "color: #e0c8b0;", interaction: 'releaseWishes' },
+                { title: "A Flower to Blossom and Grow", visual: "🌸", style: "color: var(--accent-light-pink);", animation: "glow" },
+                { title: "A Dancing Flame of Passion for this dance lover", visual: "🔥", style: "color: #ff6b6b;", animation: "bounce" },
+                { title: "A Lantern to Light Your Path But I know It is a rubbish so I'm always here", visual: "🏮", style: "color: var(--accent-red);", animation: 'float' },
+                { title: "A Touch of Good Luck, you would feel it whenever you touch any leaf ", visual: "🍀", style: "color: #66bb6a;", animation: 'spin' },
+                { title: "A Spark of Creativity which is already in you", visual: "🖌️", style: "color: var(--text-main);", interaction: 'paintSwoosh' },
+                { title: "A Rainbow After the Storm (every jhogra jhati)", visual: "🌈", style: "color: #fff;", animation: "rainbow" },
+                { title: "The Key to Your endless Potential", visual: "🔑", style: "color: #ffd700;", animation: 'glow' },
+                { title: "A Compass for Grand Adventures. Because we both love adventures😑.", visual: "🧭", style: "color: #bcaaa4;", animation: 'float' },
+                { title: "A Birthday Cupcake Just for You (●'◡'●)", visual: "🧁", style: "color: #e6b8a2;", animation: "shake" },
+                { title: "A Crystal of Purity", visual: "💎", style: "color: #b388ff;", animation: "sparkle" },
+                { title: "Grow like a plant", visual: "🌱", style: "color: #7cb342;", interaction: 'growTree' },
+                { title: "A white bird to bring peace and happiness", visual: "🕊️", style: "color: #fff;", animation: "swing" },
+                { title: "A Shield to remind you to always stay safe and secure.", visual: "🛡️", style: "color: #78909c;", animation: 'pulse' },
+                { title: "Sun to guide you to identify fake people", visual: "☀️", style: "color: #fff59d;", animation: 'glow' },
+                { title: "Magical potion to cool your hot matha (jhograr shomoy)", visual: "🧪", style: "color: #4dd0e1;", interaction: 'createMagicBubbles' },
+                { title: "A Heart Full of love", visual: "💖", style: "color: #ff1744;", animation: "heartbeat" },
+                { title: "A Universe of Love", visual: "💕", style: "color: var(--accent-pink);", animation: 'pulse' },
+                { title: "An Ocean of Calm", visual: "🌊", style: "color: #64b5f6;", interaction: 'createWaves' },
+                { title: "A Mountain to Conquer", visual: "⛰️", style: "color: #90a4ae;" },
+                { title: "A Butterfly of nature. Kokhono mon kharap lagle nature er dikey deikho it will calm your heart.", visual: "🦋", style: "color: #ab47bc;", animation: "float" },
+                { title: "A kite wich just flies higher and higher to see the beauty from the horizon.", visual: "🪁", style: "color: #ef5350;", animation: 'float' },
+                { title: "A Brilliant Firework Display just to celibrate this jhogrutta mohilar birthday", visual: "🎆", style: "", interaction: 'launchFireworks' },
+                { title: "A Shooting Star for Wishes. But always wish to Allah", visual: "🌠", style: "color: #ffeb3b;", interaction: 'shootingStars' },
+                { title: "A Telescope to See the stars.", visual: "🔭", style: "color: #bdbdbd;", animation: "zoom-in-out" },
+                { title: "A fire which reminds you of Islam and Akhirah.", visual: "🔥", style: "color: #ff5722;", interaction: 'phoenixRise' },
+                { title: "A Magic Wand of Possibilities", visual: "✨", style: "color: #ffd54f;", interaction: 'castSpell' },
+                { title: "A Story Yet to be Written.", visual: "📖", style: "color: #a1887f;" }
+            ];
+            function showGift(index) {
+                giftStep.style.opacity = '0';
+                setTimeout(() => {
+                    const gift = gifts[index];
+                    giftContent.innerHTML = `
+                        <h2 class="gift-title">${gift.title}</h2>
+                        <div class="gift-visual ${gift.animation || ''}" style="${gift.style || ''}">${gift.visual}</div>
+                    `;
+                    progressIndicator.textContent = `Gift ${index + 1} / ${gifts.length}`;
+                    if (gift.interaction) { window[gift.interaction](); }
+                    nextGiftButton.textContent = (index === gifts.length - 1) ? "Continue the Journey" : "Next Gift";
+                    giftStep.style.opacity = '1';
+                }, 500);
+            }
+            nextGiftButton.addEventListener('click', async () => {
+                if (currentGiftIndex < gifts.length - 1) {
+                    currentGiftIndex++;
+                    showGift(currentGiftIndex);
+                } else {
+   
+                    switchStep(memoryLaneStep);
+                    showMemoryLane();
+                }
+            });
+
+            function showMemoryLane() {
+                const memories = [
+                    { emoji: "🎂", text: "Happy Birthday!" },
+                    { emoji: "🎈", text: "Baloon to celebrate it." },
+                    { emoji: "🌟", text: "A very bright star to light the room" },
+                    { emoji: "💝", text: "Love Allah ." }
+                ];
+                const container = document.getElementById('memory-cards-container');
+                container.innerHTML = '';
+                memories.forEach((memory, index) => {
+                    setTimeout(() => {
+                        const card = document.createElement('div');
+                        card.className = 'memory-card';
+                        card.innerHTML = `
+                            <div class="memory-emoji">${memory.emoji}</div>
+                            <p style="color: var(--accent-light-pink); font-family: var(--font-handwriting);">${memory.text}</p>
+                        `;
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        container.appendChild(card);
+                        setTimeout(() => {
+                            card.style.transition = 'all 0.5s ease-out';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 500);
+                });
+            }
+            document.getElementById('continue-from-memories').addEventListener('click', () => {
+                switchStep(wishFountainStep);
+            });
+
+            let wishCount = 0;
+            document.getElementById('make-wish-button').addEventListener('click', () => {
+                const wishes = ['💫', '⭐', '✨', '🌟', '💖'];
+                const fountain = document.getElementById('fountain');
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        const wish = document.createElement('div');
+                        wish.className = 'wish-drop';
+                        wish.textContent = wishes[Math.floor(Math.random() * wishes.length)];
+                        wish.style.left = `${40 + Math.random() * 20}%`;
+                        fountain.appendChild(wish);
+                        setTimeout(() => wish.remove(), 3000);
+                    }, i * 100);
+                }
+                wishCount++;
+                if (wishCount >= 3) {
+                    document.getElementById('make-wish-button').classList.add('hidden');
+                    document.getElementById('continue-from-fountain').classList.remove('hidden');
+                }
+            });
+            document.getElementById('continue-from-fountain').addEventListener('click', async () => {
+                switchStep(catContainer);
+                startConfettiRain();
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                stopConfettiRain();
+                switchStep(letterRevealContainer);
+            });
+            function showPage(index) {
+                bookPages.forEach((page, i) => { page.classList.remove('is-active', 'was-active'); if (i < index) page.classList.add('was-active'); else if (i === index) page.classList.add('is-active'); });
+                currentPageIndex = index;
+                prevButton.style.display = index === 0 ? 'none' : 'block';
+                nextButton.style.display = index === bookPages.length - 1 ? 'none' : 'block';
+            }
+            nextButton.addEventListener('click', () => { if (currentPageIndex < bookPages.length - 1) showPage(currentPageIndex + 1); });
+            prevButton.addEventListener('click', () => { if (currentPageIndex > 0) showPage(currentPageIndex - 1); });
+            const resetAndRestart = () => {
+                currentGiftIndex = 0;
+                stopFlowerFall();
+                stopConfettiRain();
+                showPage(0);
+                runFullSequence();
+            };
+        
+            const urlParams = new URLSearchParams(window.location.search);
+            const bypassTimer = urlParams.get('bypass') === 'bypass' || urlParams.get('bypass') === '472';
+            restartButton.textContent = 'Roll Back';
+            restartButton.addEventListener('click', startRollBack);
+            document.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'r') startRollBack(); });
+            let imageFallInterval;
+            let rollBackContainer = null;
+            const sampleImages = [
+                '🎂', '🎁', '🎈', '🎉', '⭐', '✨', '🌟', '💝', '💖', '💕',
+                '🌸', '🌺', '🌻', '🌷', '🦋', '🐱', '🎵', '🎶', '🎨', '🎭'
+            ];
+            function startRollBack() {
+              
+                steps.forEach(step => step.classList.add('hidden'));
+               
+                if (rollBackContainer) {
+                    rollBackContainer.remove();
+                }
+             
+                rollBackContainer = document.createElement('div');
+                rollBackContainer.id = 'roll-back-container';
+                rollBackContainer.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(45deg, #000, #1a1a1a);
+                    z-index: 999;
+                    overflow: hidden;
+                `;
+                const rollBackContent = document.createElement('div');
+                rollBackContent.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    z-index: 1001;
+                `;
+                const rollBackText = document.createElement('div');
+                rollBackText.style.cssText = `
+                    color: var(--accent-pink);
+                    font-size: 2rem;
+                    font-family: var(--font-handwriting);
+                    margin-bottom: 2rem;
+                `;
+                rollBackText.textContent = 'Rewinding Memories...';
+                const seeAgainButton = document.createElement('button');
+                seeAgainButton.textContent = 'See Again';
+                seeAgainButton.style.cssText = `
+                    background: var(--accent-pink);
+                    color: white;
+                    border: none;
+                    padding: 12px 30px;
+                    border-radius: 30px;
+                    font-size: 1.2rem;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                    margin-right: 1rem;
+                `;
+                seeAgainButton.addEventListener('click', () => {
+                
+                    const existingImages = rollBackContainer.querySelectorAll('.falling-image');
+                    existingImages.forEach(img => img.remove());
+                  
+                    startImageFall(rollBackContainer);
+                });
+                const restartJourneyButton = document.createElement('button');
+                restartJourneyButton.textContent = 'Restart Journey';
+                restartJourneyButton.style.cssText = `
+                    background: var(--accent-light-pink);
+                    color: var(--paper-text);
+                    border: none;
+                    padding: 12px 30px;
+                    border-radius: 30px;
+                    font-size: 1.2rem;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                `;
+                restartJourneyButton.addEventListener('click', () => {
+            
+                    if (imageFallInterval) {
+                        clearInterval(imageFallInterval);
+                    }
+                
+                    if (rollBackContainer) {
+                        rollBackContainer.remove();
+                    }
+                   
+                    currentGiftIndex = 0;
+                    wishCount = 0;
+                    showPage(0);
+                    runFullSequence();
+                });
+                rollBackContent.appendChild(rollBackText);
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: center;';
+                buttonContainer.appendChild(seeAgainButton);
+                buttonContainer.appendChild(restartJourneyButton);
+                rollBackContent.appendChild(buttonContainer);
+                rollBackContainer.appendChild(rollBackContent);
+                document.body.appendChild(rollBackContainer);
+             
+                startImageFall(rollBackContainer);
+       
+                if (!document.getElementById('roll-back-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'roll-back-styles';
+                    style.textContent = `
+                        @keyframes fall-rewind {
+                            0% {
+                                transform: translateY(0) rotate(0deg) scale(1);
+                                opacity: 1;
+                            }
+                            100% {
+                                transform: translateY(120vh) rotate(720deg) scale(0.3);
+                                opacity: 0;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            function startImageFall(container) {
+               
+                if (imageFallInterval) {
+                    clearInterval(imageFallInterval);
+                }
+             
+                imageFallInterval = setInterval(() => {
+                    createFallingImage(container);
+                }, 150);
+            }
+            function createFallingImage(container) {
+                const image = document.createElement('div');
+                const randomImage = sampleImages[Math.floor(Math.random() * sampleImages.length)];
+                image.textContent = randomImage;
+                image.className = 'falling-image';
+                image.style.cssText = `
+                    position: absolute;
+                    font-size: ${Math.random() * 3 + 1}rem;
+                    left: ${Math.random() * 100}%;
+                    top: -50px;
+                    animation: fall-rewind ${Math.random() * 4 + 3}s linear forwards;
+                    z-index: 1000;
+                `;
+                container.appendChild(image);
+              
+                setTimeout(() => {
+                    if (image.parentNode) {
+                        image.remove();
+                    }
+                }, 7000);
+            }
+            function switchStep(targetStep) {
+                steps.forEach(step => step.classList.add('hidden'));
+                if (targetStep) targetStep.classList.remove('hidden');
+            }
+            function createParticles(container, options) {
+                
+                if (!container) return;
+                container.innerHTML = '';
+                for (let i = 0; i < options.count; i++) {
+                    const p = document.createElement('span'); p.classList.add(options.className);
+                    p.innerText = options.chars[Math.floor(Math.random() * options.chars.length)];
+                    p.style.color = options.colors[Math.floor(Math.random() * options.colors.length)];
+                    p.style.left = Math.random() * 100 + '%';
+                    p.style.fontSize = Math.random() * (options.maxSize - options.minSize) + options.minSize + 'rem';
+                    p.style.animationDuration = Math.random() * 3 + options.baseSpeed + 's';
+                    p.style.animationDelay = Math.random() * (options.baseSpeed + 2) + 's';
+                    container.appendChild(p);
+                }
+            }
+            const startFlowerFall = () => createParticles(flowerFallContainer, { count: 70, className: 'flower-fall', chars: ['❀', '✿'], colors: ['var(--accent-pink)', 'var(--text-main)'], baseSpeed: 4, minSize: 1, maxSize: 1.5 });
+            const stopFlowerFall = () => flowerFallContainer.innerHTML = '';
+            const startConfettiRain = () => createParticles(confettiContainer, { count: 100, className: 'confetti', chars: ['❀', '✿'], colors: ['var(--accent-pink)', 'var(--accent-red)'], baseSpeed: 3, minSize: 1, maxSize: 1.5 });
+            const stopConfettiRain = () => confettiContainer.innerHTML = '';
+            function initializeBookBackgrounds() {
+                document.querySelectorAll('.page-background').forEach(bg => { createParticles(bg, { count: 20, className: 'page-particle', chars: ['❀', '✿'], colors: ['var(--accent-light-pink)', 'var(--accent-light-red)', 'var(--accent-pink)'], baseSpeed: 8, minSize: 0.6, maxSize: 1 }); });
+            }
+            function triggerConfettiBlast() {
+                const blastContainer = flowerFallContainer;
+                for (let i = 0; i < 80; i++) {
+                    const p = document.createElement('span'); p.classList.add('blast-particle');
+                    p.innerText = ['❀', '✿'][Math.floor(Math.random() * 2)];
+                    p.style.color = ['var(--accent-pink)', 'var(--text-main)'][Math.floor(Math.random() * 2)];
+                    p.style.fontSize = Math.random() * 2 + 1 + 'rem';
+                    p.style.setProperty('--x-end', `${(Math.random() - 0.5) * 2 * 300}vw`);
+                    p.style.setProperty('--y-end', `${(Math.random() - 0.5) * 2 * 300}vh`);
+                    blastContainer.appendChild(p); setTimeout(() => p.remove(), 1200);
+                }
+            }
+            async function runFullSequence() {
+                switchStep(animationContainer);
+            
+                const messageElement = document.getElementById('birthday-message');
+                if (messageElement) {
+                     messageElement.textContent = '';
+                }
+                await runOpeningAnimation();
+              
+                await typewriterAnimation(messageElement, "HAPPY BIRTHDAY\nTO YOU\n Samucha");
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                switchStep(giftStep);
+                showGift(0);
+            }
+            letter.addEventListener('click', () => { showPage(0); switchStep(bookContainer); });
+            function typewriterAnimation(element, text) {
+                return new Promise(resolve => {
+                    if (!element) { resolve(); return; } 
+                    element.textContent = ''; element.classList.add('blinking-cursor');
+                    let i = 0;
+                    const interval = setInterval(() => {
+                        if (i < text.length) element.textContent += text.charAt(i++);
+                        else { clearInterval(interval); element.classList.remove('blinking-cursor'); resolve(); }
+                    }, 100);
+                });
+            }
+          
+            function runOpeningAnimation() {
+                return new Promise(resolve => {
+                    const countdownElement = document.getElementById('countdown');
+
+                   
+                    if (bypassTimer) {
+                        console.log("Bypass timer activated. Skipping countdown.");
+                        if (countdownElement) countdownElement.style.display = 'none';
+                        triggerConfettiBlast();
+                        setTimeout(resolve, 1200); 
+                        return;
+                    }
+
+                   
+                    const targetDate = new Date('2025-07-25T00:00:00');
+
+                    const now = new Date();
+                    const timeLeft = targetDate - now;
+
+                 
+                    if (timeLeft <= 0) {
+                        console.log("Countdown has finished (date in past). Skipping to the main event.");
+                        if (countdownElement) countdownElement.style.display = 'none'; 
+                        triggerConfettiBlast();
+                        
+                        setTimeout(resolve, 1200);
+                        return; 
+                    }
+
+                    
+                    startFlowerFall();
+                    if (countdownElement) countdownElement.style.display = 'block';
+                    const countdownInterval = setInterval(() => {
+                        const currentNow = new Date();
+                        const currenttimeLeft = targetDate - currentNow;
+                        if (currenttimeLeft <= 0) {
+                            if (countdownElement) countdownElement.innerText = "00:00:00:00";
+                            clearInterval(countdownInterval);
+                            setTimeout(() => {
+                                if (countdownElement) countdownElement.style.display = 'none';
+                                stopFlowerFall();
+                                triggerConfettiBlast();
+                                resolve();
+                            }, 1000);
+                            return;
+                        }
+                        const days = Math.floor(currenttimeLeft / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((currenttimeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((currenttimeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((currenttimeLeft % (1000 * 60)) / 1000);
+                        if (countdownElement) {
+                            countdownElement.innerText =
+                                `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        }
+                    }, 1000);
+                });
+            }
+
+            window.growTree = () => {
+                const visual = giftContent.querySelector('.gift-visual');
+                visual.style.transition = 'all 2s ease-out';
+                setTimeout(() => {
+                    visual.textContent = '🌳';
+                    visual.style.transform = 'scale(1.5)';
+                }, 100);
+            };
+            window.createMagicBubbles = () => {
+                for (let i = 0; i < 10; i++) {
+                    setTimeout(() => {
+                        const bubble = document.createElement('div');
+                        bubble.className = 'bubble';
+                        bubble.style.width = bubble.style.height = `${20 + Math.random() * 30}px`;
+                        bubble.style.left = `${Math.random() * 100}%`;
+                        bubble.style.bottom = '0';
+                        giftContent.appendChild(bubble);
+                        setTimeout(() => bubble.remove(), 3000);
+                    }, i * 200);
+                }
+            };
+            window.createWaves = () => {
+                const visual = giftContent.querySelector('.gift-visual');
+                visual.style.animation = 'none';
+                setTimeout(() => {
+                    visual.style.animation = 'float-anim 2s ease-in-out infinite';
+                }, 10);
+            };
+            window.shootingStars = () => {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        const star = document.createElement('div');
+                        star.style.cssText = `
+                            position: absolute;
+                            top: ${Math.random() * 50}%;
+                            left: -50px;
+                            color: #ffeb3b;
+                            font-size: 2rem;
+                            animation: shooting-star 1s ease-out forwards; /* Uses CSS-defined keyframes */
+                        `;
+                        star.textContent = '⭐';
+                        giftContent.appendChild(star);
+
+
+                    }, i * 300);
+                }
+            };
+            window.phoenixRise = () => {
+                const visual = giftContent.querySelector('.gift-visual');
+                visual.style.transition = 'all 2s ease-out';
+                visual.style.transform = 'translateY(100px) scale(0)';
+                setTimeout(() => {
+                    visual.textContent = '🦅';
+                    visual.style.transform = 'translateY(0) scale(1.5)';
+                    visual.style.filter = 'drop-shadow(0 0 30px #ff5722)';
+                }, 500);
+            };
+            window.castSpell = () => {
+                const visual = giftContent.querySelector('.gift-visual');
+                for (let i = 0; i < 20; i++) {
+                    const dust = document.createElement('div');
+                    dust.className = 'magic-dust';
+                    const angle = (Math.PI * 2 * i) / 20;
+                    const distance = 100 + Math.random() * 50;
+                    dust.style.setProperty('--dust-x', `${Math.cos(angle) * distance}px`);
+                    dust.style.setProperty('--dust-y', `${Math.sin(angle) * distance}px`);
+                    dust.style.left = '50%';
+                    dust.style.top = '50%';
+                    dust.style.animationDelay = `${Math.random() * 0.5}s`;
+                    giftContent.appendChild(dust);
+                    setTimeout(() => dust.remove(), 2000);
+                }
+            };
+            window.playMusicBox = () => {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+                const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+                const melody = [ {n:'G4',d:0.2}, {n:'A4',d:0.2}, {n:'B4',d:0.2}, {n:'C5',d:0.4}, {n:'B4',d:0.4} ];
+                const noteToFreq = (note) => ({'G4':392,'A4':440,'B4':494,'C5':523}[note] || 440);
+                let currentTime = audioCtx.currentTime; gainNode.gain.setValueAtTime(0, currentTime);
+                melody.forEach(note => { gainNode.gain.linearRampToValueAtTime(0.1, currentTime + 0.01); oscillator.frequency.setValueAtTime(noteToFreq(note.n), currentTime); currentTime += note.d; gainNode.gain.linearRampToValueAtTime(0, currentTime - 0.01); });
+                oscillator.connect(gainNode); gainNode.connect(audioCtx.destination); oscillator.start(0); oscillator.stop(currentTime);
+            };
+            window.releaseWishes = () => {
+                const wishes = ['Joy', 'Laughter', 'Happiness'];
+                const visual = giftContent.querySelector('.gift-visual');
+                wishes.forEach((text, i) => {
+                    setTimeout(() => {
+                        const wish = document.createElement('span');
+                        wish.style.cssText=`position:absolute; bottom:20px; left:50%; transform:translateX(-50%); color:var(--accent-light-pink); font-family:var(--font-handwriting); font-size:2rem; opacity:0; animation:float-up 3s ease-out; animation-delay:${i*0.4}s;`; // Uses CSS-defined keyframes
+                        wish.innerText=text;
+                        visual.appendChild(wish);
+                        setTimeout(()=>wish.remove(), 3000);
+                    }, i*200);
+                });
+
+            };
+            window.paintSwoosh = () => {
+                const swoosh = document.createElement('div'); swoosh.className = 'swoosh';
+                giftContent.appendChild(swoosh); setTimeout(()=>swoosh.remove(), 1000);
+            };
+            window.launchFireworks = () => {
+                for (let i=0; i < 15; i++) {
+                    const fw = document.createElement('div'); fw.className = 'firework';
+                    fw.style.left = `${10 + Math.random() * 80}%`;
+                    fw.style.top = `${10 + Math.random() * 80}%`;
+                    fw.style.transform = `scale(${Math.random() * 0.5 + 0.5})`;
+                    fw.style.animationDelay = `${Math.random() * 0.5}s`;
+                    fw.style.boxShadow = `0 0 15px 5px currentColor, 0 0 5px 2px currentColor inset`;
+                    fw.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                    giftContent.appendChild(fw); setTimeout(() => fw.remove(), 1000);
+                }
+            };
+            initializeBookBackgrounds();
+            showPage(0);
+            runFullSequence();
+        });
+    </script>
+</body>
+</html>
